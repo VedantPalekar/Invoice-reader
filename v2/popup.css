@@ -1,0 +1,1027 @@
+/*
+ * Invoice Reader — popup styling
+ * Modern, sleek dashboard look with light + dark themes.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Light theme tokens */
+  --bg: #ffffff;
+  --bg-elev: #fbfbfd;
+  --bg-muted: #f5f6f8;
+  --bg-hover: #f1f3f7;
+  --surface-1: #ffffff;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --divider: #eef0f3;
+
+  --text: #0f172a;
+  --text-muted: #6b7280;
+  --text-subtle: #94a3b8;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --accent-fg: #ffffff;
+
+  --success: #059669;
+  --success-hover: #047857;
+  --success-soft: #ecfdf5;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-soft: #fef2f2;
+
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+
+  --shadow-xs: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-pop: 0 8px 24px rgba(15, 23, 42, 0.12);
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono",
+    Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0d12;
+    --bg-elev: #11141b;
+    --bg-muted: #161a23;
+    --bg-hover: #1c2230;
+    --surface-1: #11141b;
+    --border: #1f2532;
+    --border-strong: #2a3142;
+    --divider: #1a1f2b;
+
+    --text: #e6e8ee;
+    --text-muted: #9aa3b2;
+    --text-subtle: #6b7488;
+
+    --accent: #818cf8;
+    --accent-hover: #a5adff;
+    --accent-soft: rgba(129, 140, 248, 0.14);
+    --accent-fg: #0b0d12;
+
+    --success: #34d399;
+    --success-hover: #6ee7b7;
+    --success-soft: rgba(52, 211, 153, 0.14);
+
+    --danger: #f87171;
+    --danger-hover: #fca5a5;
+    --danger-soft: rgba(248, 113, 113, 0.14);
+
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.14);
+
+    --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.65);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force the popup window to a fixed working width. Chrome will pick this up
+   as the popup size (capped at ~800px). We intentionally do NOT use
+   `max-width: 100vw` — when the browser window itself is narrow, Chrome
+   clamps the popup viewport, and a 100vw max-width would let the body
+   collapse to that tiny viewport. Instead we keep a hard floor with
+   min-width so the layout never falls below a usable size. */
+html {
+  width: 720px;
+}
+
+body {
+  width: 720px;
+  min-width: 720px;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  letter-spacing: -0.005em;
+  overflow-x: hidden;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 14px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: linear-gradient(
+    180deg,
+    var(--bg-elev) 0%,
+    var(--bg) 100%
+  );
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-fg);
+  box-shadow: var(--shadow-sm);
+}
+
+.brand-text h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brand-subtitle {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid transparent;
+  letter-spacing: -0.005em;
+}
+
+.ai-chip[hidden] {
+  display: none;
+}
+
+.ai-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px var(--success-soft);
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.icon-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ─── Action toolbar ────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--bg);
+}
+
+.actions-spacer {
+  flex: 1;
+}
+
+.btn {
+  --btn-bg: var(--surface-1);
+  --btn-fg: var(--text);
+  --btn-border: var(--border);
+  --btn-bg-hover: var(--bg-hover);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background-color 0.12s ease, border-color 0.12s ease,
+    color 0.12s ease, box-shadow 0.12s ease, transform 0.06s ease;
+  box-shadow: var(--shadow-xs);
+}
+
+.btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--border-strong);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-xs);
+  border-color: var(--accent);
+}
+
+.btn-icon {
+  flex: none;
+  opacity: 0.95;
+}
+
+.btn-primary {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--accent-fg);
+  --btn-border: transparent;
+  --btn-bg-hover: var(--accent-hover);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.btn-primary:hover {
+  border-color: transparent;
+}
+
+.btn-secondary {
+  --btn-bg: var(--surface-1);
+  --btn-fg: var(--text);
+  --btn-border: var(--border);
+}
+
+.btn-success {
+  --btn-bg: var(--success);
+  --btn-fg: #ffffff;
+  --btn-border: transparent;
+  --btn-bg-hover: var(--success-hover);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.btn-success:hover {
+  border-color: transparent;
+}
+
+.btn-ghost-danger {
+  --btn-bg: transparent;
+  --btn-fg: var(--danger);
+  --btn-border: transparent;
+  --btn-bg-hover: var(--danger-soft);
+  height: 26px;
+  padding: 0 8px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.btn-ghost-danger:hover {
+  border-color: transparent;
+  color: var(--danger-hover);
+}
+
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* The PDF upload control is a <label>; make it behave like a button. */
+label.btn {
+  cursor: pointer;
+}
+
+/* ─── Status line ───────────────────────────────────────────────────────── */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 6px 16px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-bottom: 1px solid var(--divider);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.status:empty {
+  color: var(--text-subtle);
+}
+
+.status.error {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-bottom-color: transparent;
+}
+
+.status.success {
+  color: var(--success);
+  background: var(--success-soft);
+  border-bottom-color: transparent;
+}
+
+/* ─── Table ─────────────────────────────────────────────────────────────── */
+
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+  max-height: 380px;
+  position: relative;
+  background: var(--bg);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-muted);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+thead th.th-num {
+  text-align: right;
+}
+
+thead th.th-action {
+  width: 36px;
+  padding: 0;
+}
+
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--divider);
+  color: var(--text);
+  vertical-align: middle;
+  background: var(--bg);
+  transition: background-color 0.1s ease;
+}
+
+tbody tr:hover td {
+  background: var(--bg-hover);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+td.numeric {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+td.numeric.empty {
+  color: var(--text-subtle);
+}
+
+td.vendor {
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+td.invoice-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+td.date {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Source pill: shows whether the row came from a PDF or a tab capture. */
+td.source {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-pill.pdf {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: transparent;
+}
+
+.source-pill.html {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.source-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.source-pill .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+/* Remove (×) button per row. Only fully visible on hover for a cleaner look. */
+.row-action {
+  width: 36px;
+  text-align: right;
+  padding-right: 8px !important;
+}
+
+.remove-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-subtle);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background-color 0.12s ease,
+    color 0.12s ease, border-color 0.12s ease;
+}
+
+tbody tr:hover .remove-btn,
+.remove-btn:focus-visible {
+  opacity: 1;
+}
+
+.remove-btn:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.remove-btn:focus-visible {
+  outline: none;
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+/* ─── Empty state ───────────────────────────────────────────────────────── */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 32px;
+  color: var(--text-muted);
+}
+
+.empty-illustration {
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-muted);
+  color: var(--text-subtle);
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+
+.empty-state h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  max-width: 360px;
+  color: var(--text-muted);
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--divider);
+  background: var(--bg-elev);
+}
+
+.footer-hint {
+  font-size: 11px;
+  color: var(--text-subtle);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-hint::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-soft);
+}
+
+/* ─── Utility ───────────────────────────────────────────────────────────── */
+
+.hidden {
+  display: none !important;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* ─── Inline-edit + validation indicators ──────────────────────────────── */
+
+td.editable {
+  position: relative;
+  cursor: text;
+}
+
+td.editable:focus {
+  outline: none;
+  background: var(--accent-soft) !important;
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+td.editable[data-edited="true"]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+td.editable[data-warn="true"] {
+  background: var(--warning-soft) !important;
+  color: var(--warning);
+}
+
+td.editable[data-warn="true"]::before {
+  content: "⚠";
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  color: var(--warning);
+  pointer-events: none;
+}
+
+td.editable.numeric[data-warn="true"]::before {
+  right: auto;
+  left: 4px;
+}
+
+/* The link-style button used inside text content (e.g. empty state). */
+.link-button {
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-button:hover {
+  color: var(--accent-hover);
+}
+
+/* ─── Settings overlay ─────────────────────────────────────────────────── */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-overlay.hidden {
+  display: none !important;
+}
+
+.settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: fadeIn 0.16s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-backdrop {
+    background: rgba(0, 0, 0, 0.55);
+  }
+}
+
+.settings-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-pop);
+  animation: slideInRight 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.settings-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--bg-elev);
+}
+
+.settings-sheet-header h2 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.settings-sheet-body {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 18px 8px;
+}
+
+.settings-sheet-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  background: var(--bg-elev);
+}
+
+.settings-group {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.settings-group-head {
+  margin-bottom: 14px;
+}
+
+.settings-group-head h3 {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+
+.settings-group-head p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+.form-row > label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 5px;
+  letter-spacing: -0.005em;
+}
+
+.form-row input[type="text"],
+.form-row input[type="password"],
+.form-row select {
+  width: 100%;
+  height: 32px;
+  padding: 0 11px;
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 12.5px;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.form-row select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 14px, calc(100% - 9px) 14px;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+
+.form-row input:focus,
+.form-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.form-hint {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.form-hint a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.form-hint a:hover {
+  text-decoration: underline;
+}
+
+.form-hint.error { color: var(--danger); }
+.form-hint.success { color: var(--success); }
+
+.input-with-suffix {
+  position: relative;
+}
+
+.input-with-suffix input {
+  padding-right: 36px;
+}
+
+.suffix-btn {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  width: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+}
+
+.suffix-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+[data-llm-row] {
+  transition: opacity 0.15s ease;
+}
+
+[data-llm-row].disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.form-row-checkbox > label {
+  margin-bottom: 0;
+}
+
+.checkbox-label {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ─── Totals row (running expense sum) ────────────────────────────────── */
+
+tfoot.totals-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+tfoot.totals-foot.hidden {
+  display: none;
+}
+
+tfoot.totals-row,
+tfoot tr.totals-row td {
+  background: var(--bg-elev);
+}
+
+tfoot tr.totals-row td {
+  border-top: 2px solid var(--border-strong);
+  border-bottom: none;
+  padding: 12px 12px;
+}
+
+td.totals-label {
+  text-align: right;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+td.totals-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+td.totals-value.multi-currency {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 12.5px;
+}
+
+td.totals-value.multi-currency span {
+  display: block;
+}
+
+/* Custom scrollbar for the table area. */
+.table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+}
+
+.table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}

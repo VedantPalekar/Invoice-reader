@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Invoice Reader</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M8 13h8"/>
+            <path d="M8 17h5"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Invoice Reader</h1>
+          <p class="brand-subtitle">Consolidate invoices, export to Excel</p>
+        </div>
+      </div>
+      <span id="invoice-count" class="badge" title="Invoices in queue">0</span>
+    </header>
+
+    <section class="actions" role="toolbar" aria-label="Invoice actions">
+      <button id="btn-add-current" class="btn btn-primary" type="button">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>Add current page</span>
+      </button>
+
+      <label for="pdf-input" class="btn btn-secondary" tabindex="0">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Upload PDFs</span>
+      </label>
+      <input id="pdf-input" type="file" accept="application/pdf" multiple hidden />
+
+      <div class="actions-spacer" aria-hidden="true"></div>
+
+      <button id="btn-export" class="btn btn-success" type="button">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export to Excel</span>
+      </button>
+    </section>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <section class="table-wrap" id="table-wrap">
+      <table id="invoice-table">
+        <thead>
+          <tr>
+            <th class="th-source">Source</th>
+            <th>Vendor</th>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th class="th-num">Subtotal</th>
+            <th class="th-num">Tax</th>
+            <th class="th-num">Total</th>
+            <th class="th-action" aria-label="Actions"></th>
+          </tr>
+        </thead>
+        <tbody id="invoice-tbody"></tbody>
+        <tfoot id="invoice-tfoot" class="totals-foot hidden">
+          <tr class="totals-row">
+            <td colspan="6" class="totals-label">Total expense</td>
+            <td class="numeric totals-value" id="total-expense"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div id="empty-state" class="empty-state">
+        <div class="empty-illustration" aria-hidden="true">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M8 13h8"/>
+            <path d="M8 17h5"/>
+            <path d="M8 9h2"/>
+          </svg>
+        </div>
+        <h2>No invoices yet</h2>
+        <p>
+          Capture the invoice in the active tab, or upload one or more PDF
+          invoices to get started.
+        </p>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <span class="footer-hint" id="footer-hint">Data stays on this device</span>
+      <button id="btn-clear" class="btn btn-ghost-danger" type="button">
+        <svg class="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/>
+          <path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        <span>Clear all</span>
+      </button>
+    </footer>
+
+    <script src="lib/pdf.min.js"></script>
+    <script src="lib/xlsx.full.min.js"></script>
+    <script src="parser.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

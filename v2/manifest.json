@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Invoice Reader v2",
+  "version": "2.0.0",
+  "description": "v2 — AI-assisted invoice extraction (OpenAI / Anthropic) with schema.org JSON-LD detection, spatial PDF parsing, cross-field validation, and inline-editable corrections. Exports to Excel.",
+  "action": {
+    "default_title": "Invoice Reader",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/pdf.worker.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
