@@ -388,7 +388,11 @@
     });
 
     cell.addEventListener("blur", async () => {
-      const next = cell.textContent.trim();
+      let next = cell.textContent.trim();
+      if (field === "invoiceDate" && InvoiceParser.normalizeInvoiceDate) {
+        const norm = InvoiceParser.normalizeInvoiceDate(next);
+        if (norm) next = norm;
+      }
       const original = inv[field] || "";
       if (next === original || (next === "" && !original)) {
         if (!next) cell.textContent = "—";
@@ -519,6 +523,22 @@
       const inferred = currencyFor(inv);
       if (inferred) {
         inv.currency = inferred;
+        mutated = true;
+      }
+    }
+    if (mutated) await saveInvoices(invoices);
+    return invoices;
+  }
+
+  async function backfillInvoiceDates(invoices) {
+    if (!InvoiceParser.normalizeInvoiceDate) return invoices;
+    let mutated = false;
+    for (const inv of invoices) {
+      if (inv.invoiceDate == null || inv.invoiceDate === "") continue;
+      const n = InvoiceParser.normalizeInvoiceDate(inv.invoiceDate);
+      const prev = String(inv.invoiceDate).trim();
+      if (n && n !== prev) {
+        inv.invoiceDate = n;
         mutated = true;
       }
     }
@@ -1039,7 +1059,8 @@
   // Initial render + chip refresh.
   Promise.all([loadInvoices(), loadSettings()])
     .then(async ([invoices, settings]) => {
-      const migrated = await backfillCurrencies(invoices);
+      let migrated = await backfillCurrencies(invoices);
+      migrated = await backfillInvoiceDates(migrated);
       render(migrated);
       refreshAiChip(settings);
     })

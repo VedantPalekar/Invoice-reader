@@ -294,6 +294,25 @@
     return invoices;
   }
 
+  /**
+   * Normalize stored invoice dates to DD-MM-YYYY (idempotent migration).
+   */
+  async function backfillInvoiceDates(invoices) {
+    if (!InvoiceParser.normalizeInvoiceDate) return invoices;
+    let mutated = false;
+    for (const inv of invoices) {
+      if (inv.invoiceDate == null || inv.invoiceDate === "") continue;
+      const n = InvoiceParser.normalizeInvoiceDate(inv.invoiceDate);
+      const prev = String(inv.invoiceDate).trim();
+      if (n && n !== prev) {
+        inv.invoiceDate = n;
+        mutated = true;
+      }
+    }
+    if (mutated) await saveInvoices(invoices);
+    return invoices;
+  }
+
   function formatMoney(currency, amount) {
     const formatted = amount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -580,6 +599,7 @@
 
   loadInvoices()
     .then(backfillCurrencies)
+    .then(backfillInvoiceDates)
     .then(render)
     .catch((err) => {
       console.error(err);

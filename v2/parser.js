@@ -282,6 +282,137 @@
   const DATE_RE =
     /\b(\d{1,2}[\/\-.\s]\d{1,2}[\/\-.\s]\d{2,4}|\d{4}[\/\-.\s]\d{1,2}[\/\-.\s]\d{1,2}|\d{1,2}[\s\-\/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*[\s\-\/]\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{2,4})\b/i;
 
+  const MONTH_NAME_TO_NUM = {
+    jan: 1,
+    feb: 2,
+    mar: 3,
+    apr: 4,
+    may: 5,
+    jun: 6,
+    jul: 7,
+    aug: 8,
+    sep: 9,
+    sept: 9,
+    oct: 10,
+    nov: 11,
+    dec: 12,
+  };
+
+  function expandTwoDigitYear(yStr) {
+    if (!yStr) return NaN;
+    if (yStr.length === 4) return parseInt(yStr, 10);
+    if (yStr.length === 2) {
+      const n = parseInt(yStr, 10);
+      return n <= 69 ? 2000 + n : 1900 + n;
+    }
+    return parseInt(yStr, 10);
+  }
+
+  function isValidYMD(year, month, day) {
+    if (!Number.isFinite(year) || year < 1900 || year > 2100) return false;
+    if (!Number.isFinite(month) || month < 1 || month > 12) return false;
+    if (!Number.isFinite(day) || day < 1 || day > 31) return false;
+    const dt = new Date(Date.UTC(year, month - 1, day));
+    return (
+      dt.getUTCFullYear() === year &&
+      dt.getUTCMonth() === month - 1 &&
+      dt.getUTCDate() === day
+    );
+  }
+
+  function formatDDMMYYYY(day, month, year) {
+    const d = String(day).padStart(2, "0");
+    const mo = String(month).padStart(2, "0");
+    return `${d}-${mo}-${year}`;
+  }
+
+  /**
+   * Normalize invoice dates to DD-MM-YYYY. Handles ISO, European/US numeric
+   * (ambiguous: try day-first, then month-first), and common month-name forms.
+   * Unparseable strings are returned unchanged so data is not discarded.
+   */
+  function normalizeInvoiceDateToDDMMYYYY(raw) {
+    if (raw == null) return "";
+    let s = String(raw).trim();
+    if (!s) return "";
+    s = s.replace(/^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s+/i, "");
+
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/i);
+    if (m) {
+      const y = +m[1];
+      const mo = +m[2];
+      const d = +m[3];
+      if (isValidYMD(y, mo, d)) return formatDDMMYYYY(d, mo, y);
+    }
+
+    m = s.match(/^(\d{4})[\/\/.](\d{1,2})[\/\/.](\d{1,2})(?:\b|$)/);
+    if (m) {
+      const y = +m[1];
+      const mo = +m[2];
+      const d = +m[3];
+      if (isValidYMD(y, mo, d)) return formatDDMMYYYY(d, mo, y);
+    }
+
+    m = s.match(
+      /^(\d{1,2})[\/\/.-](\d{1,2})[\/\/.-](\d{2,4})(?:\b(?!\d)|$)/
+    );
+    if (m) {
+      const a = +m[1];
+      const b = +m[2];
+      const y =
+        m[3].length === 4 ? +m[3] : expandTwoDigitYear(m[3]);
+      const candidates = [];
+      if (a > 12) candidates.push([a, b]);
+      else if (b > 12) candidates.push([b, a]);
+      else {
+        candidates.push([a, b]);
+        candidates.push([b, a]);
+      }
+      for (const [d, mo] of candidates) {
+        if (isValidYMD(y, mo, d)) return formatDDMMYYYY(d, mo, y);
+      }
+    }
+
+    m = s.match(
+      /^(\d{1,2})[\s\-\/]+([A-Za-z]{3,})[a-z]*[\s\-\/]+(\d{2,4})/
+    );
+    if (m) {
+      const d = +m[1];
+      const monKey = m[2].slice(0, 3).toLowerCase();
+      const mo = MONTH_NAMEToNum(monKey);
+      if (mo) {
+        const y =
+          m[3].length === 4 ? +m[3] : expandTwoDigitYear(m[3]);
+        if (isValidYMD(y, mo, d)) return formatDDMMYYYY(d, mo, y);
+      }
+    }
+
+    m = s.match(/^([A-Za-z]{3,})[a-z]*\s+(\d{1,2}),?\s+(\d{2,4})/);
+    if (m) {
+      const monKey = m[1].slice(0, 3).toLowerCase();
+      const mo = MONTH_NAMEToNum(monKey);
+      const d = +m[2];
+      const y =
+        m[3].length === 4 ? +m[3] : expandTwoDigitYear(m[3]);
+      if (mo && isValidYMD(y, mo, d)) return formatDDMMYYYY(d, mo, y);
+    }
+
+    const parsed = Date.parse(s);
+    if (!Number.isNaN(parsed)) {
+      const dt = new Date(parsed);
+      const y = dt.getFullYear();
+      const mo = dt.getMonth() + 1;
+      const d = dt.getDate();
+      if (isValidYMD(y, mo, d)) return formatDDMMYYYY(d, mo, y);
+    }
+
+    return s;
+  }
+
+  function MONTH_NAMEToNum(key) {
+    return MONTH_NAME_TO_NUM[key] || 0;
+  }
+
   function extractInvoiceDate(text) {
     const labeled = findLabelValue(
       text,
@@ -461,6 +592,7 @@
     // tabular Indian GST invoices, multi-column receipts, and any case
     // where the subtotal/tax rows weren't reachable by label matching.
     record = tryRepairTotals(record, text);
+    record.invoiceDate = normalizeInvoiceDateToDDMMYYYY(record.invoiceDate);
 
     return Object.assign(
       {
@@ -747,6 +879,9 @@
     }
     if (override && override.notes) out.notes = override.notes;
     out.fieldSources = provenance;
+    if (out.invoiceDate) {
+      out.invoiceDate = normalizeInvoiceDateToDDMMYYYY(out.invoiceDate);
+    }
     return out;
   }
 
@@ -755,6 +890,7 @@
     parseInvoiceText,
     parseMoneyToNumber,
     extractCurrency,
+    normalizeInvoiceDate: normalizeInvoiceDateToDDMMYYYY,
     confidenceScore,
     validateTotals,
     mergeRecords,

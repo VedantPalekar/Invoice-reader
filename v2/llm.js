@@ -48,7 +48,7 @@
         invoiceDate: {
           type: ["string", "null"],
           description:
-            "The invoice issue date in ISO 8601 (YYYY-MM-DD) when unambiguous. Otherwise return the date exactly as printed.",
+            "Invoice issue date as DD-MM-YYYY when unambiguous. Otherwise return the date exactly as printed.",
         },
         currency: {
           type: ["string", "null"],
@@ -98,7 +98,7 @@ General rules:
 - "Vendor" is the SELLER / issuer (the party charging money). NEVER the bill-to / customer / passenger / ship-to.
 - "Total" is the FINAL amount payable for the whole invoice — the bottom-line grand total.
 - For currency, return the ISO 4217 code (USD, EUR, GBP, INR, JPY, AED, ...) inferred from symbols (₹, $, €, £) or text.
-- For invoiceDate, return YYYY-MM-DD when unambiguous (e.g. "March 15, 2024" → "2024-03-15"). Otherwise return the date verbatim.
+- For invoiceDate, return DD-MM-YYYY when unambiguous (e.g. "March 15, 2024" → "15-03-2024", ISO "2024-03-15" → "15-03-2024"). Otherwise return the date verbatim.
 
 Total selection (critical):
 - If the document has a "Grand Total" row, use it. Pick the value in the FINAL / rightmost monetary column ("Total Invoice Value", "Total Amount", "Amount Payable", "Net Payable", "Balance Due"), NOT an intermediate subtotal column.
