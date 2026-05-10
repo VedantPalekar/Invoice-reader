@@ -423,6 +423,15 @@
         sourceType: "html",
       });
       record.validation = InvoiceParser.validateTotals(record);
+      const existing = await loadInvoices();
+      if (
+        typeof InvoiceDuplicateCheck !== "undefined" &&
+        !InvoiceDuplicateCheck.shouldAddInvoice(existing, record)
+      ) {
+        render(existing);
+        setStatus("Not added — duplicate skipped.");
+        return;
+      }
       const list = await addInvoice(record);
       render(list);
       setStatus(
@@ -447,6 +456,7 @@
 
     let processed = 0;
     let failed = 0;
+    let skippedDup = 0;
 
     for (const file of files) {
       setStatus(
@@ -459,6 +469,14 @@
           sourceType: "pdf",
         });
         record.validation = InvoiceParser.validateTotals(record);
+        const listSoFar = await loadInvoices();
+        if (
+          typeof InvoiceDuplicateCheck !== "undefined" &&
+          !InvoiceDuplicateCheck.shouldAddInvoice(listSoFar, record)
+        ) {
+          skippedDup += 1;
+          continue;
+        }
         await addInvoice(record);
         processed += 1;
       } catch (err) {
@@ -473,13 +491,21 @@
     event.target.value = "";
 
     if (failed === 0) {
+      const dupHint =
+        skippedDup > 0
+          ? ` (${skippedDup} duplicate${skippedDup === 1 ? "" : "s"} skipped)`
+          : "";
       setStatus(
-        `Added ${processed} PDF invoice${processed === 1 ? "" : "s"}.`,
+        `Added ${processed} PDF invoice${processed === 1 ? "" : "s"}${dupHint}.`,
         "success"
       );
     } else {
+      const dupHint =
+        skippedDup > 0
+          ? ` ${skippedDup} duplicate${skippedDup === 1 ? "" : "s"} skipped.`
+          : "";
       setStatus(
-        `Added ${processed} invoice${processed === 1 ? "" : "s"}, ${failed} failed. Scanned/image PDFs are not supported.`,
+        `Added ${processed} invoice${processed === 1 ? "" : "s"}, ${failed} failed.${dupHint} Scanned/image PDFs are not supported.`,
         failed === files.length ? "error" : ""
       );
     }
@@ -609,7 +635,24 @@
         moneyCell(r.total),
       ]);
 
-      const aoa = [headers, ...rows];
+      const groups = computeTotalsByCurrency(list);
+      const summaryRows = [];
+      if (groups.size > 0) {
+        summaryRows.push(new Array(headers.length).fill(""));
+        const sorted = [...groups.entries()].sort((a, b) =>
+          String(a[0] || "").localeCompare(String(b[0] || ""))
+        );
+        for (let i = 0; i < sorted.length; i++) {
+          const [currency, sum] = sorted[i];
+          const row = new Array(headers.length).fill("");
+          row[0] = i === 0 ? "Total expense" : "";
+          row[1] = currency || "";
+          row[8] = sum;
+          summaryRows.push(row);
+        }
+      }
+
+      const aoa = [headers, ...rows, ...summaryRows];
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       ws["!cols"] = [
         { wch: 28 }, { wch: 12 }, { wch: 22 }, { wch: 28 },
@@ -623,6 +666,15 @@
             cell.t = "n";
             cell.z = "#,##0.00";
           }
+        }
+      }
+      const summaryStart = 2 + rows.length + 1;
+      for (let j = 0; j < groups.size; j++) {
+        const ref = `I${summaryStart + j}`;
+        const cell = ws[ref];
+        if (cell && typeof cell.v === "number") {
+          cell.t = "n";
+          cell.z = "#,##0.00";
         }
       }
 
