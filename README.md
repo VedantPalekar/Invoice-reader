@@ -109,11 +109,8 @@ User-facing docs (API keys, vision toggle, troubleshooting): [`v2/README.md`](./
 
 ## Schematic architecture (diagrams)
 
-The diagrams below use [Mermaid](https://mermaid.js.org/).
 
-**VS Code / Cursor:** the default Markdown preview does **not** render Mermaid (you will see a fenced code block instead of a diagram). Install [**Markdown Preview Mermaid Support**](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid-support) (`bierner.markdown-mermaid-support`), then open the preview again (**Markdown: Open Preview**). GitHub and GitLab render these blocks in the browser without extra setup.
 
-If you prefer not to install anything, use the **ASCII** summaries under each figure.
 
 **Figures:** **A** workspace (two extensions) · **B** system context · **C** MV3 three contexts · **D** sequence: add current page · **E** PDF → text → record · **F** v2 extraction layering · **G** storage, UI, export · **H** repo v1 vs v2 · **I** popup script load order
 
