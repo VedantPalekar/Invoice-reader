@@ -676,3 +676,35 @@ td.totals-value.multi-currency span {
 .table-wrap::-webkit-scrollbar-thumb:hover {
   background: var(--border-strong);
 }
+
+/* Inline-editable cells + validation hint (subtotal + tax vs total). */
+td.editable {
+  position: relative;
+  cursor: text;
+}
+
+td.editable:focus {
+  outline: none;
+  background: var(--accent-soft) !important;
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+td.editable[data-warn="true"] {
+  background: var(--warning-soft) !important;
+  color: var(--warning);
+}
+
+td.editable[data-warn="true"]::before {
+  content: "⚠";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+  color: var(--warning);
+  pointer-events: none;
+}
+
+td.editable.numeric[data-warn="true"]::before {
+  right: auto;
+  left: 4px;
+}

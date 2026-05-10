@@ -64,6 +64,25 @@
     return next;
   }
 
+  async function updateInvoice(id, patch) {
+    const list = await loadInvoices();
+    const idx = list.findIndex((r) => r.id === id);
+    if (idx === -1) return list;
+    list[idx] = Object.assign({}, list[idx], patch);
+    list[idx].validation = InvoiceParser.validateTotals(list[idx]);
+    await saveInvoices(list);
+    return list;
+  }
+
+  const FIELD_LABELS = {
+    vendor: "Vendor",
+    invoiceNumber: "Invoice #",
+    invoiceDate: "Invoice Date",
+    subtotal: "Subtotal",
+    tax: "Tax",
+    total: "Total",
+  };
+
   // ---------------------------------------------------------------------------
   // Status / busy helpers
   // ---------------------------------------------------------------------------
@@ -120,13 +139,25 @@
 
     for (const inv of invoices) {
       const tr = document.createElement("tr");
+      const validation =
+        inv.validation != null
+          ? inv.validation
+          : InvoiceParser.validateTotals(inv);
+      const totalImbalanced = validation && validation.ok === false;
+
       tr.appendChild(sourceCell(inv));
-      tr.appendChild(td(inv.vendor || "—", "vendor", inv.vendor));
-      tr.appendChild(td(inv.invoiceNumber || "—", "invoice-num"));
-      tr.appendChild(td(inv.invoiceDate || "—", "date"));
-      tr.appendChild(numericCell(inv.subtotal));
-      tr.appendChild(numericCell(inv.tax));
-      tr.appendChild(numericCell(inv.total));
+      tr.appendChild(editableCell(inv, "vendor", "vendor"));
+      tr.appendChild(editableCell(inv, "invoiceNumber", "invoice-num"));
+      tr.appendChild(editableCell(inv, "invoiceDate", "date"));
+      tr.appendChild(
+        editableCell(inv, "subtotal", "numeric", { warn: totalImbalanced })
+      );
+      tr.appendChild(
+        editableCell(inv, "tax", "numeric", { warn: totalImbalanced })
+      );
+      tr.appendChild(
+        editableCell(inv, "total", "numeric", { warn: totalImbalanced })
+      );
 
       const actions = document.createElement("td");
       actions.className = "row-action";
@@ -147,23 +178,72 @@
     }
   }
 
-  function td(text, className, title) {
+  /**
+   * Editable table cell; blur / Enter saves and re-validates the row.
+   */
+  function editableCell(inv, field, className, opts) {
     const cell = document.createElement("td");
-    cell.textContent = text == null || text === "" ? "—" : text;
-    if (className) cell.className = className;
-    if (title) cell.title = title;
-    return cell;
-  }
+    cell.classList.add("editable");
+    if (className) cell.classList.add(className);
+    cell.contentEditable = "true";
+    cell.spellcheck = false;
+    cell.setAttribute("data-field", field);
 
-  function numericCell(value) {
-    const cell = document.createElement("td");
-    cell.className = "numeric";
+    const value = inv[field];
     if (value == null || value === "") {
       cell.textContent = "—";
-      cell.classList.add("empty");
+      if (className === "numeric") cell.classList.add("empty");
     } else {
       cell.textContent = value;
     }
+
+    if (opts && opts.warn) {
+      cell.setAttribute("data-warn", "true");
+      const validation =
+        inv.validation != null
+          ? inv.validation
+          : InvoiceParser.validateTotals(inv);
+      cell.title =
+        validation && validation.diff
+          ? `Subtotal + tax differs from total by ${validation.diff.toFixed(2)}.`
+          : "Subtotal + tax does not match total.";
+    }
+
+    cell.addEventListener("focus", () => {
+      if (cell.textContent.trim() === "—") cell.textContent = "";
+    });
+
+    cell.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        cell.blur();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cell.textContent = inv[field] || "—";
+        if (!inv[field] && className === "numeric") cell.classList.add("empty");
+        cell.blur();
+      }
+    });
+
+    cell.addEventListener("blur", async () => {
+      let next = cell.textContent.trim();
+      if (field === "invoiceDate" && InvoiceParser.normalizeInvoiceDate) {
+        const norm = InvoiceParser.normalizeInvoiceDate(next);
+        if (norm) next = norm;
+      }
+      const original = inv[field] || "";
+      if (next === original || (next === "" && !original)) {
+        if (!next) {
+          cell.textContent = "—";
+          if (className === "numeric") cell.classList.add("empty");
+        }
+        return;
+      }
+      const updated = await updateInvoice(inv.id, { [field]: next });
+      render(updated);
+      setStatus(`Updated ${FIELD_LABELS[field]}.`, "success");
+    });
+
     return cell;
   }
 
@@ -342,6 +422,7 @@
         source: response.title || response.url,
         sourceType: "html",
       });
+      record.validation = InvoiceParser.validateTotals(record);
       const list = await addInvoice(record);
       render(list);
       setStatus(
@@ -377,6 +458,7 @@
           source: file.name,
           sourceType: "pdf",
         });
+        record.validation = InvoiceParser.validateTotals(record);
         await addInvoice(record);
         processed += 1;
       } catch (err) {

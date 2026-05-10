@@ -821,11 +821,37 @@
     return out;
   }
 
+  function validateTotals(record) {
+    const sub = parseMoneyToNumber(record && record.subtotal);
+    const tax = parseMoneyToNumber(record && record.tax);
+    const tot = parseMoneyToNumber(record && record.total);
+
+    const haveSub = Number.isFinite(sub);
+    const haveTax = Number.isFinite(tax);
+    const haveTot = Number.isFinite(tot);
+
+    if (!haveTot) return { ok: true, diff: 0, tolerance: 0, reason: "no total" };
+    if (!haveSub && !haveTax) {
+      return { ok: true, diff: 0, tolerance: 0, reason: "only total" };
+    }
+
+    const expectedTotal = (haveSub ? sub : 0) + (haveTax ? tax : 0);
+    const diff = Math.abs(tot - expectedTotal);
+    const tolerance = Math.max(0.1, Math.abs(tot) * 0.02);
+    return {
+      ok: diff <= tolerance,
+      diff,
+      tolerance,
+      reason: diff <= tolerance ? "balanced" : "imbalanced",
+    };
+  }
+
   global.InvoiceParser = {
     normalizeText,
     parseInvoiceText,
     parseMoneyToNumber,
     extractCurrency,
     normalizeInvoiceDate: normalizeInvoiceDateToDDMMYYYY,
+    validateTotals,
   };
 })(typeof self !== "undefined" ? self : this);

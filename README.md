@@ -2,14 +2,16 @@
 
 This folder contains **two independent unpacked Chrome extensions** you can load side-by-side:
 
-| Folder | Extension name | What it does |
-| ------ | -------------- | ------------ |
-| `./` (this folder) | **Invoice Reader** | v1 — heuristic regex + label parser only; fully offline; blue icon. |
-| `./v2/` | **Invoice Reader v2** | v2 — adds AI-assisted extraction (OpenAI / Anthropic), schema.org JSON-LD, spatial PDF parsing, vision for PDFs, cross-field validation, inline edits, multi-currency totals; indigo icon with green **2** badge. |
+
+| Folder             | Extension name        | What it does                                                                                                                                                                                                      |
+| ------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./` (this folder) | **Invoice Reader**    | v1 — heuristic regex + label parser only; fully offline; blue icon.                                                                                                                                               |
+| `./v2/`            | **Invoice Reader v2** | v2 — adds AI-assisted extraction (OpenAI / Anthropic), schema.org JSON-LD, spatial PDF parsing, vision for PDFs, cross-field validation, inline edits, multi-currency totals; indigo icon with green **2** badge. |
+
 
 Chrome treats each directory as a separate extension (separate storage, icons, settings). See [Loading both at once](#loading-both-at-once) below.
 
-For day-to-day **use** and **LLM API setup**, see also [`v2/README.md`](./v2/README.md).
+For day-to-day **use** and **LLM API setup**, see also `[v2/README.md](./v2/README.md)`.
 
 ---
 
@@ -20,22 +22,22 @@ For day-to-day **use** and **LLM API setup**, see also [`v2/README.md`](./v2/REA
 3. [v1 — quick reference](#v1--invoice-reader-quick-reference)
 4. [v2 — pointer](#v2--invoice-reader-v2)
 5. [Technical architecture](#technical-architecture)
-   - [Overview](#1-overview)
-   - [Schematic architecture (diagrams)](#schematic-architecture-diagrams)
-   - [Languages & runtime](#2-languages--runtime-stack)
-   - [MV3 contexts](#3-manifest-v3-architecture-three-contexts)
-   - [File layout](#4-file--module-inventory)
-   - [End-to-end flows](#5-end-to-end-flows)
-   - [Extraction pipeline](#6-the-extraction-pipeline)
-   - [Persistence](#7-persistence-layer)
-   - [UI](#8-ui-architecture)
-   - [Excel export](#9-excel-export)
-   - [Security & privacy](#10-security--privacy)
-   - [Third-party libraries](#11-third-party-libraries)
-   - [External APIs v2](#12-external-apis-v2-only)
-   - [Dev tooling](#13-build--dev-tooling)
-   - [v1 vs v2](#14-v1-vs-v2-summary)
-   - [Extension points](#15-where-to-extend)
+  - [Overview](#1-overview)
+  - [Schematic architecture (diagrams)](#schematic-architecture-diagrams)
+  - [Languages & runtime](#2-languages--runtime-stack)
+  - [MV3 contexts](#3-manifest-v3-architecture-three-contexts)
+  - [File layout](#4-file--module-inventory)
+  - [End-to-end flows](#5-end-to-end-flows)
+  - [Extraction pipeline](#6-the-extraction-pipeline)
+  - [Persistence](#7-persistence-layer)
+  - [UI](#8-ui-architecture)
+  - [Excel export](#9-excel-export)
+  - [Security & privacy](#10-security--privacy)
+  - [Third-party libraries](#11-third-party-libraries)
+  - [External APIs v2](#12-external-apis-v2-only)
+  - [Dev tooling](#13-build--dev-tooling)
+  - [v1 vs v2](#14-v1-vs-v2-summary)
+  - [Extension points](#15-where-to-extend)
 
 ---
 
@@ -44,7 +46,7 @@ For day-to-day **use** and **LLM API setup**, see also [`v2/README.md`](./v2/REA
 1. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
 2. Enable **Developer mode** (top-right).
 3. **Load unpacked** → select **this folder** (v1). It appears as “Invoice Reader” with the blue icon.
-4. **Load unpacked** again → select **`v2/`**. It appears as “Invoice Reader v2” with the indigo icon.
+4. **Load unpacked** again → select `**v2/`**. It appears as “Invoice Reader v2” with the indigo icon.
 5. Pin both toolbar icons if you want quick access.
 
 ## Which version to use?
@@ -89,7 +91,7 @@ For day-to-day **use** and **LLM API setup**, see also [`v2/README.md`](./v2/REA
 
 ## v2 — Invoice Reader v2
 
-User-facing docs (API keys, vision toggle, troubleshooting): [`v2/README.md`](./v2/README.md).
+User-facing docs (API keys, vision toggle, troubleshooting): `[v2/README.md](./v2/README.md)`.
 
 ---
 
@@ -101,15 +103,19 @@ User-facing docs (API keys, vision toggle, troubleshooting): [`v2/README.md`](./
 
 1. Captures invoice content from **HTML** (active tab DOM) or **PDF** (user upload).
 2. Normalizes text and parses **structured fields** (vendor, invoice #, date, currency, subtotal, tax, total).
-3. Persists rows in **`chrome.storage.local`**.
+3. Persists rows in `**chrome.storage.local`**.
 4. Renders a **popup UI** with a scrollable table, per-row delete, **Total expense** (summed by currency), and optional inline edits (v2).
-5. Exports **`Invoices`** sheet(s) as **`.xlsx`** via SheetJS.
+5. Exports `**Invoices`** sheet(s) as `**.xlsx**` via SheetJS.
 
 **v1** is heuristic-only and stays on-device. **v2** optionally calls **OpenAI** or **Anthropic** (with optional **vision** images for PDFs), merges with heuristics, and can validate rows arithmetically.
 
 ## Schematic architecture (diagrams)
 
+The diagrams below use [Mermaid](https://mermaid.js.org/).
 
+**VS Code:** the default Markdown preview does **not** render Mermaid (you will see a fenced code block instead of a diagram). Install **[Markdown Preview Mermaid Support](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid-support)** (`bierner.markdown-mermaid-support`), then open the preview again (**Markdown: Open Preview**). GitHub and GitLab render these blocks in the browser without extra setup.
+
+If you prefer not to install anything, use the **ASCII** summaries under each figure.
 
 
 **Figures:** **A** workspace (two extensions) · **B** system context · **C** MV3 three contexts · **D** sequence: add current page · **E** PDF → text → record · **F** v2 extraction layering · **G** storage, UI, export · **H** repo v1 vs v2 · **I** popup script load order
@@ -129,6 +135,8 @@ flowchart LR
   V1 -->|"Load unpacked"| E1
   V2 -->|"Load unpacked"| E2
 ```
+
+
 
 **ASCII:** Two folders on disk → two separate “Load unpacked” entries → two extension IDs, two `chrome.storage.local` namespaces, two toolbar icons.
 
@@ -166,6 +174,8 @@ flowchart TB
   Pop --> LLM
 ```
 
+
+
 **ASCII:**
 
 ```
@@ -196,6 +206,8 @@ flowchart TB
   B <-->|"tabs.sendMessage"| C
 ```
 
+
+
 **ASCII:** Popup ↔ Background ↔ Content script; each has its own global scope; only messages pass data.
 
 ### D. Sequence: “Add current page” (HTML invoice)
@@ -225,6 +237,8 @@ sequenceDiagram
   POP->>POP: render table + totals
 ```
 
+
+
 ### E. Flow: PDF upload → text → record
 
 ```mermaid
@@ -246,6 +260,8 @@ flowchart TD
   end
 ```
 
+
+
 **Note:** In v2, PDF text extraction and (when enabled) page rasterization run from the **same** `getDocument` handle; merged LLM output is combined with the heuristic record before persistence. v1 follows only the top path through `F → G`.
 
 ### F. v2 extraction layering (data flow)
@@ -262,6 +278,8 @@ flowchart LR
   L --> V
   V --> R[Row in table]
 ```
+
+
 
 **Note:** `tryRepairTotals` and vendor rules run inside / after `parseInvoiceText` depending on version; the diagram shows only the **merge order** for structured data and LLM on top of the heuristic baseline.
 
@@ -282,6 +300,8 @@ flowchart TB
   XLSX --> DL[Browser download .xlsx]
 ```
 
+
+
 ### H. v1 vs v2 packaging (repository)
 
 ```mermaid
@@ -294,6 +314,8 @@ flowchart TB
   V1 --> P1[no llm.js]
   V2F --> P2[llm.js + vision path]
 ```
+
+
 
 ### I. Popup script load order and dependencies
 
@@ -315,7 +337,9 @@ flowchart LR
   A -.->|pdfjsLib| D
 ```
 
-**v2** — same chain with **`llm.js`** inserted before `popup.js`:
+
+
+**v2** — same chain with `**llm.js`** inserted before `popup.js`:
 
 ```text
 pdf.min.js → xlsx.full.min.js → parser.js → llm.js → popup.js
@@ -327,16 +351,18 @@ pdf.min.js → xlsx.full.min.js → parser.js → llm.js → popup.js
 
 ## 2. Languages & runtime stack
 
-| Layer | Technology | Notes |
-| ----- | ---------- | ----- |
-| Manifest | JSON (MV3) | Required by Chromium. |
-| Logic | **JavaScript (ES2020+)** | No TypeScript, no bundler; classic scripts. |
-| Markup | **HTML5** | Single `popup.html` (extension popup window). |
-| Styles | **CSS3** | Custom properties, `prefers-color-scheme: dark`, no preprocessor. |
-| Async | **`async`/`await`, Promises** | Storage, messaging, PDF, `fetch` (v2). |
-| Engine | **V8** inside Chromium | Runs in **three** extension contexts (below). |
-| Packaging | Unpacked directory | Loaded via “Load unpacked”. |
-| Dev helpers | Python (icons), Node (`node --check`), curl (vendoring libs) | Not shipped to end users. |
+
+| Layer       | Technology                                                   | Notes                                                             |
+| ----------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Manifest    | JSON (MV3)                                                   | Required by Chromium.                                             |
+| Logic       | **JavaScript (ES2020+)**                                     | No TypeScript, no bundler; classic scripts.                       |
+| Markup      | **HTML5**                                                    | Single `popup.html` (extension popup window).                     |
+| Styles      | **CSS3**                                                     | Custom properties, `prefers-color-scheme: dark`, no preprocessor. |
+| Async       | `**async`/`await`, Promises**                                | Storage, messaging, PDF, `fetch` (v2).                            |
+| Engine      | **V8** inside Chromium                                       | Runs in **three** extension contexts (below).                     |
+| Packaging   | Unpacked directory                                           | Loaded via “Load unpacked”.                                       |
+| Dev helpers | Python (icons), Node (`node --check`), curl (vendoring libs) | Not shipped to end users.                                         |
+
 
 **Not used:** React/Vue, Webpack/Vite, `npm`/`package.json` in the shipped tree (vendor JS lives under `lib/`).
 
@@ -344,11 +370,13 @@ pdf.min.js → xlsx.full.min.js → parser.js → llm.js → popup.js
 
 ## 3. Manifest V3 architecture (three contexts)
 
-| Context | Primary file(s) | Lifetime | Role |
-| ------- | --------------- | -------- | ---- |
-| **Service worker** | `background.js` | Event-driven; can sleep | Injects `content.js`, bridges popup ↔ tab via messages. |
-| **Popup** | `popup.html`, `popup.css`, `popup.js`, `parser.js`, (+ `llm.js` in v2) | While popup open | DOM UI, PDF.js + SheetJS, storage, optional LLM `fetch`. |
-| **Content script** | `content.js` | Per tab, after injection | Reads DOM (isolated world); v2 adds JSON-LD scan. |
+
+| Context            | Primary file(s)                                                        | Lifetime                 | Role                                                     |
+| ------------------ | ---------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------- |
+| **Service worker** | `background.js`                                                        | Event-driven; can sleep  | Injects `content.js`, bridges popup ↔ tab via messages.  |
+| **Popup**          | `popup.html`, `popup.css`, `popup.js`, `parser.js`, (+ `llm.js` in v2) | While popup open         | DOM UI, PDF.js + SheetJS, storage, optional LLM `fetch`. |
+| **Content script** | `content.js`                                                           | Per tab, after injection | Reads DOM (isolated world); v2 adds JSON-LD scan.        |
+
 
 **Communication:** `chrome.runtime.sendMessage`, `chrome.tabs.sendMessage` — no shared JS globals between contexts.
 
@@ -360,7 +388,7 @@ pdf.min.js → xlsx.full.min.js → parser.js → llm.js → popup.js
 
 **v1 (`./`):** `manifest.json`, `background.js`, `content.js`, `parser.js`, `popup.html`, `popup.css`, `popup.js`, `icons/*`, `lib/{pdf.min.js, pdf.worker.min.js, xlsx.full.min.js}`.
 
-**v2 (`./v2/`):** Same core files plus **`llm.js`** (OpenAI + Anthropic); richer `content.js`, `parser.js` (merge/validate helpers), `popup.*` (settings, AI chip, inline edit, vision path). Duplicate `lib/` and `icons/`.
+**v2 (`./v2/`):** Same core files plus `**llm.js`** (OpenAI + Anthropic); richer `content.js`, `parser.js` (merge/validate helpers), `popup.*` (settings, AI chip, inline edit, vision path). Duplicate `lib/` and `icons/`.
 
 ---
 
@@ -400,7 +428,7 @@ pdf.min.js → xlsx.full.min.js → parser.js → llm.js → popup.js
 - **Money:** `MONEY_RE` supports US/EU/Indian groupings; **no** space as thousands separator (avoids gluing adjacent numbers).
 - **Total:** **sentence** labels (`You have paid` → **first** money on line) vs **tabular** labels (`Grand Total` → **last** money on line).
 - **Tax:** direct labels + **CGST+SGST+IGST** sum when split.
-- **`tryRepairTotals`:** if sub+tax ≠ total, search money tokens + pairwise sums (split tax) under tight tolerance and realistic implied tax rate.
+- `**tryRepairTotals`:** if sub+tax ≠ total, search money tokens + pairwise sums (split tax) under tight tolerance and realistic implied tax rate.
 
 ### 6.2 JSON-LD (v2, `content.js`)
 
@@ -408,20 +436,22 @@ Scrape `<script type="application/ld+json">`, find `Invoice`/`Order`/`Receipt` t
 
 ### 6.3 LLM (v2, `llm.js`)
 
-- **OpenAI:** `chat/completions` with **`response_format: json_schema`** (strict).
+- **OpenAI:** `chat/completions` with `**response_format: json_schema`** (strict).
 - **Anthropic:** `messages` + **forced tool use** for same schema; browser header `anthropic-dangerous-direct-browser-access`.
 - Optional **vision:** OpenAI `image_url` parts; Anthropic base64 `image` blocks.
-- **`mergeRecords`:** non-empty LLM fields overlay heuristic baseline; **fieldSources** tracks provenance.
+- `**mergeRecords`:** non-empty LLM fields overlay heuristic baseline; **fieldSources** tracks provenance.
 
 ### 6.4 Why LLM layering helps
 
 v2 does **not** replace the heuristic parser. It **layers** on top so you get both **speed / offline safety** and **semantic accuracy** when an API is configured.
 
-| Layer | Role | Limits |
-| ----- | ---- | ------ |
-| **Heuristics** (`parser.js`) | Regex, labels, spatial PDF text, vendor rules, `tryRepairTotals` | Brittle on ambiguous tables, odd wording, issuer vs counterparty confusion |
-| **JSON-LD** (optional, page HTML) | Structured `Invoice`/`Order` data when the site publishes it | Rare on many PDFs / some portals |
-| **LLM** (`llm.js`) | Reads messy text like a human: correct column for “total”, PNR vs invoice #, travel phrases (`You have paid…`), GST layouts | Costs tokens; needs network + API key |
+
+| Layer                             | Role                                                                                                                        | Limits                                                                     |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Heuristics** (`parser.js`)      | Regex, labels, spatial PDF text, vendor rules, `tryRepairTotals`                                                            | Brittle on ambiguous tables, odd wording, issuer vs counterparty confusion |
+| **JSON-LD** (optional, page HTML) | Structured `Invoice`/`Order` data when the site publishes it                                                                | Rare on many PDFs / some portals                                           |
+| **LLM** (`llm.js`)                | Reads messy text like a human: correct column for “total”, PNR vs invoice #, travel phrases (`You have paid…`), GST layouts | Costs tokens; needs network + API key                                      |
+
 
 **Merge policy (`mergeRecords`):** the LLM returns a strict JSON object. For each field, **if the LLM outputs a non-empty value, it overwrites** the heuristic (or JSON-LD) value; **if the LLM leaves a field empty or null, the baseline is kept**. So:
 
@@ -434,7 +464,7 @@ v2 does **not** replace the heuristic parser. It **layers** on top so you get bo
 ### 6.5 Popup totals row (`popup.js`)
 
 - Sums **parseable** `total` per **resolved currency**: `record.currency` → symbols/codes in `total` string → `extractCurrency(rawTextPreview)` for legacy rows.
-- **`backfillCurrencies`** on load fills missing `currency` on old records.
+- `**backfillCurrencies`** on load fills missing `currency` on old records.
 
 ---
 
@@ -442,13 +472,13 @@ v2 does **not** replace the heuristic parser. It **layers** on top so you get bo
 
 - **Key `invoices`:** array of records (`id`, `source`, `sourceType`, `capturedAt`, fields, `rawTextPreview`, optional v2: `fieldSources`, `extractedBy`, `validation`, `notes`, `vendorRule`, `llmError`, `currency`).
 - **Key `settings` (v2):** `{ llm: { provider, apiKey, model, visionForPdfs } }`.
-- **`chrome.storage.onChanged`** keeps the popup table in sync if storage updates elsewhere.
+- `**chrome.storage.onChanged`** keeps the popup table in sync if storage updates elsewhere.
 
 ---
 
 ## 8. UI architecture
 
-- **Popup:** static HTML shell; **`render(invoices)`** rebuilds `<tbody>`; **`<tfoot>`** shows **Total expense** (sticky).
+- **Popup:** static HTML shell; `**render(invoices)`** rebuilds `<tbody>`; `**<tfoot>**` shows **Total expense** (sticky).
 - **CSS:** design tokens, dark mode, table polish, v2 settings sheet + editable cells + warning styles.
 - **v2:** `contenteditable` cells blur-to-save with re-validation.
 
@@ -456,7 +486,7 @@ v2 does **not** replace the heuristic parser. It **layers** on top so you get bo
 
 ## 9. Excel export
 
-- Global **`XLSX`** (SheetJS community build).
+- Global `**XLSX`** (SheetJS community build).
 - **v1** columns: Source, Source Type, Captured At, Vendor, Invoice #, Date, Subtotal, Tax, Total.
 - **v2** adds: Currency, Extracted By, Notes (when present).
 
@@ -473,10 +503,12 @@ v2 does **not** replace the heuristic parser. It **layers** on top so you get bo
 
 ## 11. Third-party libraries
 
-| Library | Role |
-| ------- | ---- |
+
+| Library              | Role                                                                                                                 |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | **PDF.js** (Mozilla) | Parse PDFs; extract positioned text; render pages to canvas (v2 vision). Worker path via `web_accessible_resources`. |
-| **SheetJS (xlsx)** | Build and download `.xlsx` in the popup. |
+| **SheetJS (xlsx)**   | Build and download `.xlsx` in the popup.                                                                             |
+
 
 Both are **vendored** under `lib/` (and `v2/lib/`).
 
@@ -484,10 +516,12 @@ Both are **vendored** under `lib/` (and `v2/lib/`).
 
 ## 12. External APIs (v2 only)
 
-| Provider | Endpoint | Purpose |
-| -------- | -------- | ------- |
-| OpenAI | `POST https://api.openai.com/v1/chat/completions` | Structured JSON extraction; optional images. |
-| Anthropic | `POST https://api.anthropic.com/v1/messages` | Same via tool use; optional images. |
+
+| Provider  | Endpoint                                          | Purpose                                      |
+| --------- | ------------------------------------------------- | -------------------------------------------- |
+| OpenAI    | `POST https://api.openai.com/v1/chat/completions` | Structured JSON extraction; optional images. |
+| Anthropic | `POST https://api.anthropic.com/v1/messages`      | Same via tool use; optional images.          |
+
 
 ---
 
@@ -500,24 +534,28 @@ Both are **vendored** under `lib/` (and `v2/lib/`).
 
 ## 14. v1 vs v2 summary
 
-| Aspect | v1 | v2 |
-| ------ | -- | -- |
-| Network | None (heuristic) | Optional LLM HTTPS calls |
+
+| Aspect             | v1                                                                           | v2                                                         |
+| ------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Network            | None (heuristic)                                                             | Optional LLM HTTPS calls                                   |
 | Parser API surface | `normalizeText`, `parseInvoiceText`, `parseMoneyToNumber`, `extractCurrency` | Same + `confidenceScore`, `validateTotals`, `mergeRecords` |
-| PDF | Spatial text | + Page images for vision when enabled |
-| UI | Table, export, totals | + Settings, AI chip, inline edit, validation UI |
+| PDF                | Spatial text                                                                 | + Page images for vision when enabled                      |
+| UI                 | Table, export, totals                                                        | + Settings, AI chip, inline edit, validation UI            |
+
 
 ---
 
 ## 15. Where to extend
 
-| Goal | Likely touchpoints |
-| ---- | ------------------ |
-| New booking vendor rule | `VENDOR_RULES` in `parser.js` / `v2/parser.js` |
-| OCR for scans | New lib + post-PDF step when text is empty |
-| Another LLM provider | `llm.js` + settings UI |
-| Export “Total expense” row | `popup.js` export + SheetJS footer row |
-| TypeScript | Would introduce a bundler / build pipeline — largest structural change |
+
+| Goal                       | Likely touchpoints                                                     |
+| -------------------------- | ---------------------------------------------------------------------- |
+| New booking vendor rule    | `VENDOR_RULES` in `parser.js` / `v2/parser.js`                         |
+| OCR for scans              | New lib + post-PDF step when text is empty                             |
+| Another LLM provider       | `llm.js` + settings UI                                                 |
+| Export “Total expense” row | `popup.js` export + SheetJS footer row                                 |
+| TypeScript                 | Would introduce a bundler / build pipeline — largest structural change |
+
 
 ---
 
