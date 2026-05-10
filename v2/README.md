@@ -81,11 +81,19 @@ accuracy.
 4. Optionally set a specific model. Defaults are:
    - OpenAI: `gpt-4o-mini` (fast, cheap, very accurate on invoices)
    - Anthropic: `claude-haiku-4-5`
-5. Click **Test connection** to verify, then **Save**.
+5. Under **PDF images for AI (vision)**, choose how to send page images to
+   the model:
+   - **When scan suspected** (default): rasterizes the PDF only if almost no
+     text was extracted — saves tokens on normal PDFs, helps scanned invoices.
+   - **Always**: every PDF uses page images (highest cost, best for complex tables).
+   - **Off**: text layer only (scanned PDFs will look empty to the model).
+6. Click **Test connection** to verify, then **Save**.
 
 Once configured:
 
 - The header shows an **AI · Provider · Model** chip so you know it's on.
+- Rows from **scanned or weak PDFs** may show a **Low** badge (hover for why).
+  Double-check those fields, especially when vision had to read page images.
 - Every new invoice you add is run through the LLM with a strict JSON
   schema, so results are deterministic and clean.
 - If the API call fails (network, key invalid, rate limit), the heuristic

@@ -27,7 +27,8 @@
       provider: "", // "" | "openai" | "anthropic"
       apiKey: "",
       model: "",
-      visionForPdfs: true, // when true, send rendered PDF pages as images
+      /** "off" | "fallback" | "always" — when to rasterize PDF pages for AI vision */
+      visionPdfMode: "fallback",
     },
   };
 
@@ -36,6 +37,36 @@
   const VISION_MAX_PAGES = 4;
   const VISION_MAX_DIMENSION = 1800; // longest side, in pixels
   const VISION_JPEG_QUALITY = 0.85;
+
+  /**
+   * True when the PDF text layer is missing or too thin (likely scanned).
+   * Used to decide vision/OCR-style extraction and low-confidence badges.
+   */
+  function isWeakPdfText(text) {
+    const t = (text || "").trim();
+    if (t.length < 48) return true;
+    const letters = (t.match(/[a-zA-Z]/g) || []).length;
+    if (letters < 20) return true;
+    const digits = (t.match(/\d/g) || []).length;
+    if (digits < 4 && letters < 40) return true;
+    return false;
+  }
+
+  function lowConfidenceHint(reason) {
+    const map = {
+      "vision-ocr":
+        "Low confidence: little text in PDF — fields used AI vision on page images. Verify all values.",
+      "no-ai":
+        "Low confidence: little text in PDF and AI is off — heuristics only. Turn on AI in Settings for vision.",
+      "vision-disabled":
+        "Low confidence: little text in PDF; PDF vision is off (text layer only). Enable vision in Settings.",
+      "no-images":
+        "Low confidence: little text in PDF and page images were not used (error or setting).",
+      "no-text-layer":
+        "Low confidence: little selectable text (likely scanned). This build has no OCR — try Invoice Reader v2 with AI vision.",
+    };
+    return map[reason] || "Low confidence — verify extracted fields.";
+  }
 
   const FIELD_LABELS = {
     vendor: "Vendor",
@@ -80,7 +111,7 @@
     settingProvider: document.getElementById("setting-provider"),
     settingApiKey: document.getElementById("setting-api-key"),
     settingModel: document.getElementById("setting-model"),
-    settingVision: document.getElementById("setting-vision"),
+    settingVisionMode: document.getElementById("setting-vision-mode"),
     btnToggleKey: document.getElementById("btn-toggle-key"),
     btnTestLlm: document.getElementById("btn-test-llm"),
     settingsTestStatus: document.getElementById("settings-test-status"),
@@ -126,10 +157,24 @@
     return list;
   }
 
+  function normalizeLlmSettings(llm) {
+    const out = Object.assign({}, DEFAULT_SETTINGS.llm, llm || {});
+    if (!out.visionPdfMode) {
+      if (llm && llm.visionForPdfs === false) out.visionPdfMode = "off";
+      else if (llm && llm.visionForPdfs === true) out.visionPdfMode = "always";
+      else out.visionPdfMode = "fallback";
+    }
+    if (out.visionPdfMode !== "off" && out.visionPdfMode !== "fallback" && out.visionPdfMode !== "always") {
+      out.visionPdfMode = "fallback";
+    }
+    return out;
+  }
+
   async function loadSettings() {
     const data = await chrome.storage.local.get(SETTINGS_KEY);
-    return Object.assign({}, DEFAULT_SETTINGS, data[SETTINGS_KEY] || {}, {
-      llm: Object.assign({}, DEFAULT_SETTINGS.llm, (data[SETTINGS_KEY] || {}).llm),
+    const raw = data[SETTINGS_KEY] || {};
+    return Object.assign({}, DEFAULT_SETTINGS, raw, {
+      llm: normalizeLlmSettings(raw.llm),
     });
   }
 
@@ -428,12 +473,20 @@
     pill.appendChild(label);
 
     cell.appendChild(pill);
+    if (inv.lowConfidence) {
+      const badge = document.createElement("span");
+      badge.className = "low-confidence-badge";
+      badge.textContent = "Low";
+      badge.title = lowConfidenceHint(inv.lowConfidenceReason);
+      cell.appendChild(badge);
+    }
     return cell;
   }
 
   function buildSourceTitle(inv) {
     const lines = [inv.source || ""];
     if (inv.extractedBy) lines.push(`Extracted by: ${inv.extractedBy}`);
+    if (inv.lowConfidence) lines.push(lowConfidenceHint(inv.lowConfidenceReason));
     if (inv.notes) lines.push(`Note: ${inv.notes}`);
     if (inv.validation && !inv.validation.ok) {
       lines.push(`⚠ Math mismatch: diff ${inv.validation.diff.toFixed(2)}`);
@@ -607,9 +660,9 @@
     setBusy(true);
 
     const settings = await loadSettings();
-    const useVision =
-      !!(settings.llm && settings.llm.provider && settings.llm.apiKey) &&
-      settings.llm.visionForPdfs !== false;
+    const cfg = settings.llm || {};
+    const hasLlm = !!(cfg.provider && cfg.apiKey);
+    const visionMode = cfg.visionPdfMode || "fallback";
 
     let processed = 0;
     let failed = 0;
@@ -623,19 +676,23 @@
         // Open the PDF once and reuse it for both text and image rendering
         // — avoids parsing the file twice and keeps page references warm.
         const pdf = await openPdfDocument(file);
-        const [text, images] = await Promise.all([
-          extractTextFromPdfDoc(pdf),
-          useVision
-            ? renderPdfPagesAsImages(pdf, {
-                maxPages: VISION_MAX_PAGES,
-                maxDim: VISION_MAX_DIMENSION,
-                quality: VISION_JPEG_QUALITY,
-              }).catch((err) => {
-                console.warn("PDF rasterization failed:", err);
-                return [];
-              })
-            : Promise.resolve([]),
-        ]);
+        const text = await extractTextFromPdfDoc(pdf);
+        const weak = isWeakPdfText(text);
+        let images = [];
+        if (
+          hasLlm &&
+          visionMode !== "off" &&
+          (visionMode === "always" || (visionMode === "fallback" && weak))
+        ) {
+          images = await renderPdfPagesAsImages(pdf, {
+            maxPages: VISION_MAX_PAGES,
+            maxDim: VISION_MAX_DIMENSION,
+            quality: VISION_JPEG_QUALITY,
+          }).catch((err) => {
+            console.warn("PDF rasterization failed:", err);
+            return [];
+          });
+        }
         await pdf.cleanup();
         await pdf.destroy();
 
@@ -645,6 +702,22 @@
           { source: file.name, sourceType: "pdf" },
           { images }
         );
+        if (weak) {
+          record.lowConfidence = true;
+          if (images.length > 0) {
+            record.lowConfidenceReason = "vision-ocr";
+            if (!record.notes) {
+              record.notes =
+                "Scanned / weak PDF text — used AI vision on page images; verify fields.";
+            }
+          } else if (!hasLlm) {
+            record.lowConfidenceReason = "no-ai";
+          } else if (visionMode === "off") {
+            record.lowConfidenceReason = "vision-disabled";
+          } else {
+            record.lowConfidenceReason = "no-images";
+          }
+        }
         const listSoFar = await loadInvoices();
         if (
           typeof InvoiceDuplicateCheck !== "undefined" &&
@@ -843,6 +916,7 @@
         "Subtotal",
         "Tax",
         "Total",
+        "Low confidence",
         "Extracted By",
         "Notes",
       ];
@@ -858,6 +932,7 @@
         moneyCell(r.subtotal),
         moneyCell(r.tax),
         moneyCell(r.total),
+        r.lowConfidence ? "Yes" : "",
         r.extractedBy || "heuristic",
         r.notes || "",
       ]);
@@ -884,7 +959,7 @@
       ws["!cols"] = [
         { wch: 28 }, { wch: 12 }, { wch: 22 }, { wch: 28 }, { wch: 18 },
         { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
-        { wch: 14 }, { wch: 32 },
+        { wch: 12 }, { wch: 14 }, { wch: 32 },
       ];
       // Money columns: H, I, J. Format as numbers when parseable.
       for (let i = 0; i < rows.length; i++) {
@@ -898,8 +973,10 @@
         }
       }
       const summaryStart = 2 + rows.length + 1;
+      const totalColLetter = "J";
+
       for (let j = 0; j < groups.size; j++) {
-        const ref = `J${summaryStart + j}`;
+        const ref = `${totalColLetter}${summaryStart + j}`;
         const cell = ws[ref];
         if (cell && typeof cell.v === "number") {
           cell.t = "n";
@@ -955,7 +1032,7 @@
     els.settingApiKey.value = settings.llm.apiKey || "";
     els.settingApiKey.type = "password";
     els.settingModel.value = settings.llm.model || "";
-    els.settingVision.checked = settings.llm.visionForPdfs !== false;
+    els.settingVisionMode.value = settings.llm.visionPdfMode || "fallback";
     refreshProviderUi();
     els.settingsTestStatus.textContent = "";
     els.settingsTestStatus.className = "form-hint";
@@ -1010,7 +1087,7 @@
         provider,
         apiKey,
         model,
-        visionForPdfs: !!els.settingVision.checked,
+        visionPdfMode: els.settingVisionMode.value || "fallback",
       },
     };
     await saveSettings(settings);

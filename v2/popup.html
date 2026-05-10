@@ -185,16 +185,17 @@
               <p class="form-hint" id="model-hint"></p>
             </div>
 
-            <div class="form-row form-row-checkbox" data-llm-row>
-              <label class="checkbox-label">
-                <input id="setting-vision" type="checkbox" />
-                <span>Use vision for PDFs</span>
-              </label>
+            <div class="form-row" data-llm-row>
+              <label for="setting-vision-mode">PDF images for AI (vision)</label>
+              <select id="setting-vision-mode">
+                <option value="off">Off — extracted text only</option>
+                <option value="fallback">When scan suspected (little or no text)</option>
+                <option value="always">Always — every PDF page as an image</option>
+              </select>
               <p class="form-hint">
-                Sends each PDF page as an image alongside the extracted text.
-                Dramatically more accurate on tabular layouts (Indian GST
-                invoices, multi-column receipts, etc.). Slightly higher token
-                cost per invoice. Recommended.
+                Scanned PDFs often have almost no text layer. <strong>When scan suspected</strong>
+                sends page images only when needed (saves tokens). <strong>Always</strong>
+                matches the old “use vision for every PDF” behavior. Requires an API key.
               </p>
             </div>
 

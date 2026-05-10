@@ -471,7 +471,7 @@ v2 does **not** replace the heuristic parser. It **layers** on top so you get bo
 ## 7. Persistence layer
 
 - **Key `invoices`:** array of records (`id`, `source`, `sourceType`, `capturedAt`, fields, `rawTextPreview`, optional v2: `fieldSources`, `extractedBy`, `validation`, `notes`, `vendorRule`, `llmError`, `currency`).
-- **Key `settings` (v2):** `{ llm: { provider, apiKey, model, visionForPdfs } }`.
+- **Key `settings` (v2):** `{ llm: { provider, apiKey, model, visionPdfMode } }` where `visionPdfMode` is `"off"` | `"fallback"` | `"always"`.
 - `**chrome.storage.onChanged`** keeps the popup table in sync if storage updates elsewhere.
 
 ---

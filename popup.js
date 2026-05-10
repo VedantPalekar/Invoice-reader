@@ -17,6 +17,24 @@
 
   const STORAGE_KEY = "invoices";
 
+  function isWeakPdfText(text) {
+    const t = (text || "").trim();
+    if (t.length < 48) return true;
+    const letters = (t.match(/[a-zA-Z]/g) || []).length;
+    if (letters < 20) return true;
+    const digits = (t.match(/\d/g) || []).length;
+    if (digits < 4 && letters < 40) return true;
+    return false;
+  }
+
+  function lowConfidenceHint(reason) {
+    const map = {
+      "no-text-layer":
+        "Low confidence: little selectable text (likely scanned). No OCR in v1 — use Invoice Reader v2 with AI vision.",
+    };
+    return map[reason] || "Low confidence — verify extracted fields.";
+  }
+
   if (typeof pdfjsLib !== "undefined" && pdfjsLib.GlobalWorkerOptions) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
       "lib/pdf.worker.min.js"
@@ -252,7 +270,7 @@
     cell.className = "source";
     const pill = document.createElement("span");
     pill.className = `source-pill ${inv.sourceType === "pdf" ? "pdf" : "html"}`;
-    pill.title = inv.source || "";
+    pill.title = buildSourceTitle(inv);
 
     const dot = document.createElement("span");
     dot.className = "dot";
@@ -264,7 +282,20 @@
     pill.appendChild(label);
 
     cell.appendChild(pill);
+    if (inv.lowConfidence) {
+      const badge = document.createElement("span");
+      badge.className = "low-confidence-badge";
+      badge.textContent = "Low";
+      badge.title = lowConfidenceHint(inv.lowConfidenceReason);
+      cell.appendChild(badge);
+    }
     return cell;
+  }
+
+  function buildSourceTitle(inv) {
+    const lines = [inv.source || ""];
+    if (inv.lowConfidence) lines.push(lowConfidenceHint(inv.lowConfidenceReason));
+    return lines.filter(Boolean).join("\n");
   }
 
   // ---------------------------------------------------------------------------
@@ -468,6 +499,10 @@
           source: file.name,
           sourceType: "pdf",
         });
+        if (isWeakPdfText(text)) {
+          record.lowConfidence = true;
+          record.lowConfidenceReason = "no-text-layer";
+        }
         record.validation = InvoiceParser.validateTotals(record);
         const listSoFar = await loadInvoices();
         if (
@@ -621,6 +656,7 @@
         "Subtotal",
         "Tax",
         "Total",
+        "Low confidence",
       ];
 
       const rows = list.map((r) => [
@@ -633,6 +669,7 @@
         moneyCell(r.subtotal),
         moneyCell(r.tax),
         moneyCell(r.total),
+        r.lowConfidence ? "Yes" : "",
       ]);
 
       const groups = computeTotalsByCurrency(list);
@@ -657,6 +694,7 @@
       ws["!cols"] = [
         { wch: 28 }, { wch: 12 }, { wch: 22 }, { wch: 28 },
         { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+        { wch: 12 },
       ];
       for (let i = 0; i < rows.length; i++) {
         for (const col of ["G", "H", "I"]) {
